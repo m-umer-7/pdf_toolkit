@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free PDF Toolkit - 100% Client-Side PDF Tools</title>
+    <meta name="description" content="Free online PDF toolkit - merge, split, compress, convert, OCR, and more. All processing done locally in your browser.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e' },
+                        glass: { light: 'rgba(255, 255, 255, 0.7)', dark: 'rgba(17, 24, 39, 0.7)' }
+                    },
+                    backdropBlur: { xs: '2px' },
+                    animation: { 'float': 'float 6s ease-in-out infinite', 'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite', 'spin-slow': 'spin 8s linear infinite' }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900 dark:to-gray-900 min-h-screen transition-colors duration-500">
+    <!-- Three.js Background -->
+    <div id="bg-canvas" class="fixed inset-0 z-0 opacity-30 pointer-events-none"></div>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="glass-panel p-8 rounded-2xl text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <p id="loading-text" class="text-lg font-semibold text-gray-700 dark:text-gray-200">Processing...</p>
+            <div class="w-64 h-2 bg-gray-200 dark:bg-gray-700 rounded-full mt-4 overflow-hidden">
+                <div id="progress-bar" class="h-full bg-gradient-to-r from-blue-500 to-purple-500 w-0 transition-all duration-300"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    
+    <!-- Main App -->
+    <div class="relative z-10 flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 glass-panel m-4 rounded-2xl shadow-2xl flex-shrink-0 transform transition-transform duration-300 lg:translate-x-0 -translate-x-full fixed lg:relative h-[calc(100vh-2rem)] overflow-y-auto">
+            <div class="p-4">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-file-pdf text-white text-lg"></i>
+                    </div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">PDF Toolkit</h1>
+                </div>
+                
+                <!-- Category Accordion -->
+                <nav class="space-y-2" id="category-nav">
+                    <!-- Categories will be injected by JS -->
+                </nav>
+            </div>
+        </aside>
+        
+        <!-- Mobile Sidebar Toggle -->
+        <button id="sidebar-toggle" class="lg:hidden fixed top-4 left-4 z-40 glass-panel p-3 rounded-xl shadow-lg hover:scale-110 transition-transform">
+            <i class="fas fa-bars text-gray-700 dark:text-gray-200"></i>
+        </button>
+        
+        <!-- Main Content -->
+        <main class="flex-1 p-4 lg:p-8 lg:ml-0 ml-16">
+            <!-- Top Bar -->
+            <header class="glass-panel rounded-2xl p-4 mb-6 shadow-xl">
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Welcome to Free PDF Toolkit</h2>
+                        <span class="px-3 py-1 bg-green-500/20 text-green-600 dark:text-green-400 rounded-full text-sm font-medium">
+                            <i class="fas fa-shield-alt mr-1"></i> 100% Local Processing
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <!-- Theme Toggle -->
+                        <button id="theme-toggle" class="glass-btn p-3 rounded-xl hover:scale-110 transition-transform" title="Toggle Theme">
+                            <i class="fas fa-moon dark:hidden text-gray-700"></i>
+                            <i class="fas fa-sun hidden dark:block text-yellow-400"></i>
+                        </button>
+                        <!-- GitHub Star -->
+                        <a href="https://github.com" target="_blank" class="glass-btn px-4 py-2 rounded-xl flex items-center gap-2 hover:scale-105 transition-transform">
+                            <i class="fab fa-github text-gray-700 dark:text-white"></i>
+                            <span class="hidden sm:inline text-gray-700 dark:text-white">Star on GitHub</span>
+                        </a>
+                        <!-- Frequently Used Dropdown -->
+                        <div class="relative">
+                            <button id="frequent-toggle" class="glass-btn px-4 py-2 rounded-xl flex items-center gap-2 hover:scale-105 transition-transform">
+                                <i class="fas fa-star text-yellow-500"></i>
+                                <span class="hidden sm:inline text-gray-700 dark:text-white">Quick Access</span>
+                            </button>
+                            <div id="frequent-dropdown" class="absolute right-0 mt-2 w-48 glass-panel rounded-xl shadow-2xl hidden">
+                                <div class="p-2" id="frequent-list">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 p-2">No frequent tools yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Hero Section -->
+            <section class="glass-panel rounded-2xl p-8 mb-6 shadow-xl perspective-1000">
+                <div class="tilt-element text-center">
+                    <h3 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-float">
+                        All Your PDF Needs in One Place
+                    </h3>
+                    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                        Free, secure, and powerful PDF tools. No uploads, no limits, no registration. 
+                        <span class="block mt-2 text-sm opacity-75">Your files never leave your computer.</span>
+                    </p>
+                </div>
+            </section>
+            
+            <!-- Tool Cards Grid -->
+            <section id="tools-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- Tool cards will be injected by JS -->
+            </section>
+        </main>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="relative z-10 glass-panel m-4 mt-0 rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-lock text-green-500"></i>
+                <span class="text-gray-600 dark:text-gray-300">All processing is done locally – your files never leave your computer</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="#" class="text-gray-500 hover:text-blue-500 transition-colors"><i class="fab fa-twitter text-xl"></i></a>
+                <a href="#" class="text-gray-500 hover:text-blue-700 transition-colors"><i class="fab fa-facebook text-xl"></i></a>
+                <a href="#" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"><i class="fab fa-linkedin text-xl"></i></a>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Floating Action Button -->
+    <button id="fab" class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform z-40 group">
+        <i class="fas fa-plus text-white text-xl group-hover:rotate-90 transition-transform"></i>
+        <div class="absolute right-16 top-1/2 -translate-y-1/2 glass-panel px-3 py-2 rounded-xl hidden group-hover:block whitespace-nowrap">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-200">Quick Actions</span>
+        </div>
+    </button>
+    
+    <!-- Tool Modal -->
+    <div id="tool-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="glass-panel rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between sticky top-0 bg-inherit rounded-t-2xl">
+                <div class="flex items-center gap-3">
+                    <div id="modal-icon" class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-file-pdf text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-white">Tool Name</h3>
+                        <p id="modal-description" class="text-sm text-gray-500 dark:text-gray-400">Tool description</p>
+                    </div>
+                </div>
+                <button id="modal-close" class="glass-btn p-3 rounded-xl hover:scale-110 transition-transform">
+                    <i class="fas fa-times text-gray-700 dark:text-gray-200"></i>
+                </button>
+            </div>
+            <div id="modal-content" class="p-6">
+                <!-- Tool-specific content will be injected here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- CDNs -->
+    <!-- pdf-lib -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- FileSaver -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- heic2any -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- marked.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <!-- DOMPurify -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+    <!-- Tesseract.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
+    <!-- Signature Pad -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/4.1.5/signature_pad.umd.min.js"></script>
+    <!-- SortableJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <!-- JSZip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Main Script -->
+    <script src="script.js"></script>
+</body>
+</html>
